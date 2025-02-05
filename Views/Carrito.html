@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Compras</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function cargarCarrito() {
+            const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            const carritoContainer = document.getElementById('carrito');
+            carritoContainer.innerHTML = '';
+            let total = 0;
+            carrito.forEach((item, index) => {
+                const itemElement = document.createElement('li');
+                itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
+                itemElement.innerHTML = `
+                    ${item.producto} - Cantidad: ${item.cantidad} - Precio: $${item.precio} - Subtotal: $${item.cantidad * item.precio}
+                    <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${index})">Eliminar</button>
+                `;
+                carritoContainer.appendChild(itemElement);
+                total += item.cantidad * item.precio;
+            });
+            const totalElement = document.createElement('li');
+            totalElement.className = 'list-group-item active';
+            totalElement.textContent = `Total: $${total}`;
+            carritoContainer.appendChild(totalElement);
+        }
+
+        function eliminarDelCarrito(index) {
+            let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            carrito.splice(index, 1);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            cargarCarrito();
+        }
+
+        window.onload = cargarCarrito;
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" title="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="./Dashboard.html">Volver a Productos</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h1 class="text-center">Carrito de Compras</h1>
+        <ul id="carrito" class="list-group mb-4"></ul>
+        <div class="text-center">
+            <a href="./Dashboard.html" class="btn btn-primary">Seguir Comprando</a>
+        </div>
+    </div>
+    <footer class="bg-light text-dark text-center py-3 mt-4">
+        <p>&copy; 2025 La Tienda. Todos los derechos reservados</p>
+    </footer>
+</body>
+</html>

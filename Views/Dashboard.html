@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa Interactivo - Cancelar Compra</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDI0wmdh86_zwW5QZVz2kwjXnr0CXHjhJY&libraries=places,geometry&callback=iniciarMapa" async defer></script>
+  
+  <style>
+    #repartidor-info {
+      margin-top: 20px;
+    }
+  </style>
+
+  <script>
+    let map, marker, directionsService, directionsRenderer;
+    let motoPosition, destination;
+    let routePath = []; 
+    let deliveryMarker = null;
+
+    function iniciarMapa() {
+      navigator.geolocation.getCurrentPosition((position) => {
+        motoPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 15,
+          center: motoPosition,
+        });
+
+        marker = new google.maps.Marker({
+          position: motoPosition,
+          map: map,
+          title: "Moto",
+          icon: {
+            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+            scale: 4,
+            strokeColor: "#FF0000",
+            fillColor: "#FF0000",
+            fillOpacity: 1
+          }
+        });
+
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+        directionsRenderer.setMap(map);
+      }, () => {
+        alert("No se pudo obtener la ubicación actual.");
+      });
+    }
+
+    function elegirDestino() {
+      let direccion = document.getElementById('direccionInput').value;
+      if (!direccion.trim()) {
+        alert("Por favor, ingrese una dirección de entrega.");
+        return;
+      }
+
+      let geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ address: direccion }, function(results, status) {
+        if (status === 'OK') {
+          destination = results[0].geometry.location;
+
+          if (deliveryMarker) {
+            deliveryMarker.setMap(null);
+          }
+          deliveryMarker = new google.maps.Marker({
+            position: destination,
+            map: map,
+            title: "Destino",
+            icon: {
+              path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+              scale: 4,
+              strokeColor: "#0000FF",
+              fillColor: "#0000FF",
+              fillOpacity: 1
+            }
+          });
+
+          map.setCenter(destination);
+          calcularRuta(motoPosition, destination);
+
+          $.ajax({
+            url: 'http://localhost:3333/v1/api/assign-repartidor',  
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+              if (response.repartidor) {
+                const repartidor = response.repartidor;
+                let infoHtml = `  
+                  <div class="jumbotron">
+                    <h3 class="display-5">Repartidor Asignado: ${repartidor.name}</h3>
+                    <p class="lead">Estos son los datos del repartidor asignado a tu pedido.</p>
+                    <hr class="my-4">
+                    <ul class="list-group">
+                      <li class="list-group-item"><strong>Email:</strong> ${repartidor.email}</li>
+                      <li class="list-group-item"><strong>Teléfono:</strong> ${repartidor.phone}</li>
+                    </ul>
+                  </div>
+                `;
+                $("#repartidor-info").html(infoHtml);
+                alert("Pedido realizado con éxito.\nRepartidor asignado: " + repartidor.name);
+                $('#direccionModal').modal('hide');
+              } else {
+                alert("No hay repartidores disponibles. El pedido no se realizará.");
+                // Limpiar los marcadores y rutas
+                if(deliveryMarker) {
+                  deliveryMarker.setMap(null);
+                  deliveryMarker = null;
+                }
+                directionsRenderer.set('directions', null);
+                routePath = [];
+                destination = null;
+              }
+            },
+            error: function(xhr, status, error) {
+              alert("Error al asignar repartidor: " + error);
+              $('#direccionModal').modal('hide');
+            }
+          });
+        } else {
+          alert("No se pudo encontrar la dirección. Intente de nuevo.");
+        }
+      });
+    }
+
+    function calcularRuta(origen, destino) {
+      const request = {
+        origin: origen,
+        destination: destino,
+        travelMode: google.maps.TravelMode.DRIVING
+      };
+
+      directionsService.route(request, function(response, status) {
+        if (status === 'OK') {
+          directionsRenderer.setDirections(response);
+          // Extraer el recorrido (overview_path) de la respuesta
+          routePath = response.routes[0].overview_path;
+          console.log("Ruta calculada con " + routePath.length + " puntos.");
+        } else {
+          alert("No se pudo calcular la ruta: " + status);
+        }
+      });
+    }
+
+    function setToSalida() {
+      if (routePath.length > 0) {
+        let pos = routePath[0];
+        marker.setPosition(pos);
+        map.setCenter(pos);
+      } else {
+        alert("Aún no se ha calculado la ruta.");
+      }
+    }
+
+    function setToProceso() {
+      if (routePath.length > 0) {
+        let pos = routePath[Math.floor(routePath.length / 2)];
+        marker.setPosition(pos);
+        map.setCenter(pos);
+      } else {
+        alert("Aún no se ha calculado la ruta.");
+      }
+    }
+
+    function setToFinal() {
+      if (routePath.length > 0) {
+        let pos = routePath[routePath.length - 1];
+        marker.setPosition(pos);
+        map.setCenter(pos);
+        alert("La moto ha llegado al destino.");
+      } else {
+        alert("Aún no se ha calculado la ruta.");
+      }
+    }
+
+    function cancelarCompra() {
+      if (deliveryMarker) {
+        deliveryMarker.setMap(null);
+        deliveryMarker = null;
+      }
+      if (directionsRenderer) {
+        directionsRenderer.set('directions', null);
+      }
+      routePath = [];
+      destination = null;
+      if (motoPosition) {
+        marker.setPosition(motoPosition);
+        map.setCenter(motoPosition);
+      }
+      alert("La compra ha sido cancelada y el viaje del repartidor se detuvo.");
+      $("#repartidor-info").html(`  
+        <div class="alert alert-warning" role="alert">
+          Se canceló la compra. No hay repartidor asignado.
+        </div>
+      `);
+    }
+
+    function cerrarSesion() {
+      $.ajax({
+        url: 'http://localhost:3333/v1/api/logout', 
+        type: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        success: function(response) {
+          alert(response.message); 
+          window.location.href = 'Login.html';
+        },
+        error: function(xhr, status, error) {
+          alert('Error al cerrar sesión: ' + error);
+        }
+      });
+    }
+  </script>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">didi</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="Carrito.html">Carrito</a>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link btn btn-link" onclick="cerrarSesion()">Salir</button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <h1 class="text-center">Simular Envío de Carrito</h1>
+    <button class="btn btn-success btn-lg btn-block" data-toggle="modal" data-target="#direccionModal">Pedir Carrito</button>
+    
+    <div id="repartidor-info">
+      <div class="alert alert-info" role="alert">
+        No se ha asignado repartidor aún.
+      </div>
+    </div>
+    
+    <hr>
+    <h1 class="text-center">Mapa</h1>
+    <div id="map" class="mt-4" style="width:100%; height:500px; border: 1px solid #ccc;"></div>
+  </div>
+
+  <div class="modal fade" id="direccionModal" tabindex="-1" role="dialog" aria-labelledby="direccionModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="direccionModalLabel">Ingrese su dirección</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="direccionInput" class="form-control" placeholder="Escriba su dirección">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="elegirDestino()">Confirmar Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container mt-4">
+    <button class="btn btn-primary btn-sm" style="width: 150px;" onclick="setToSalida()">Salida</button>
+    <button class="btn btn-warning btn-sm" style="width: 150px;" onclick="setToProceso()">En Proceso</button>
+    <button class="btn btn-success btn-sm" style="width: 150px;" onclick="setToFinal()">Final</button>
+    <br>
+    <button class="btn btn-danger btn-lg btn-block" onclick="cancelarCompra()">Cancelar Compra</button>
+  </div>
+
+  <footer class="bg-light text-dark text-center py-3 mt-4">
+    <p>&copy; 2025 Mi App. Todos los derechos reservados</p>
+  </footer>
+</body>
+</html>

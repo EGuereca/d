@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <div class="card p-4 shadow" style="width: 350px;">
+        <form id="loginForm">
+            <h2 class="text-center mb-4">Iniciar sesión</h2>
+            <div class="mb-3">
+                <label for="email" class="form-label">Correo Electrónico</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Contraseña</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+            <a href="./Register.html" class="btn btn-secondary w-100 mt-2">Registrarse</a>
+        </form>
+        <p id="loginError" class="text-danger text-center mt-2" style="display: none;"></p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Obtener los valores del formulario
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const loginData = { email, password };
+
+            try {
+                const response = await fetch('http://localhost:3333/v1/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Guardar token y rol en localStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('role_id', data.user.role_id); 
+
+                    alert('Inicio de sesión exitoso');
+
+                    // Redirección según rol
+                    switch (data.user.role_id) {
+                        case 1:  // Cliente
+                            window.location.href = './Dashboard.html';
+                            break;
+                        case 2:  // Administrador
+                            window.location.href = './Dashboard_Admin.html';
+                            break;
+                        case 3:  // Empleado
+                            window.location.href = './Dashboard_Repa.html';
+                            break;
+                        default: // Si el rol no es reconocido
+                            window.location.href = './login.html';
+                            break;
+                    }
+                } else {
+                    document.getElementById('loginError').textContent = data.message || 'Credenciales inválidas';
+                    document.getElementById('loginError').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error al iniciar sesión:', error);
+                document.getElementById('loginError').textContent = 'Error en la conexión. Intente nuevamente.';
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
