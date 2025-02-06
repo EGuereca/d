@@ -1,6 +1,6 @@
 {
     "development": {
-        "database": "dbrepartidor",
+        "database": "rappi",
         "username": "root",
         "password": "",
         "host": "localhost",

@@ -87,7 +87,7 @@
           calcularRuta(motoPosition, destination);
 
           $.ajax({
-            url: 'http://localhost:3333/v1/api/assign-repartidor',  
+            url: 'http://localhost:3001/v1/api/assign-repartidor',  
             method: 'GET',
             dataType: 'json',
             success: function(response) {
@@ -204,7 +204,7 @@
 
     function cerrarSesion() {
       $.ajax({
-        url: 'http://localhost:3333/v1/api/logout', 
+        url: 'http://localhost:3001/v1/api/logout', 
         type: 'POST',
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token')

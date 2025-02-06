@@ -22,6 +22,10 @@ module.exports = {
         type: Sequelize.FLOAT,
         allowNull: false
       },
+      imagen: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

@@ -2,6 +2,17 @@
   "name": "apirepartidor",
   "version": "1.0.0",
   "description": "repartidor",
+  "homepage": "https://github.com/EGuereca/d#readme",
+  "bugs": {
+    "url": "https://github.com/EGuereca/d/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EGuereca/d.git"
+  },
+  "license": "ISC",
+  "author": "jorgeybrandon",
+  "type": "commonjs",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,8 +25,6 @@
     "seed:undo": "cd ./db && npx sequelize-cli db:seed:undo",
     "seed:all": "cd ./db && npx sequelize-cli db:seed:all"
   },
-  "author": "jorgeybrandon",
-  "license": "ISC",
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.0",
     "bcryptjs": "^2.4.3",

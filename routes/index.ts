@@ -4,6 +4,7 @@ import UserController from "../Controllers/UserController";
 import RepartidorController from "../Controllers/RepartidorController";
 import { verifyToken } from "../middlewares/authMiddleware";
 import dotenv from "dotenv";
+import OrdersController from "../Controllers/OrdersController";
 
 dotenv.config();
 
@@ -31,5 +32,16 @@ routes.get("/punto-medio", RepartidorController.puntoMedio);
 routes.get("/llegada", RepartidorController.llegada);
 routes.get("/avanzar", RepartidorController.avanzar);
 
+// Rutas de órdenes
+routes.get("/orders", OrdersController.getAllOrders);
+routes.get("/orders/:id", OrdersController.getOrderById);
+routes.post("/orders", OrdersController.createOrder);
+routes.put("/orders/:id", OrdersController.updateOrder);
+routes.get("/orders/:id/total", OrdersController.getTotal);
+routes.post("/orders/details", OrdersController.createOrderDetail);
+routes.get("/orders/:order_id/details", OrdersController.getOrderDetails);
+
+// Rutas de productos
+routes.get("/products", OrdersController.getProducts);
 
 export default routes;
