@@ -3,6 +3,24 @@ import jwt from 'jsonwebtoken';
 import user from '../db/models/user';
 
 export default class UserController {
+
+  static async getLastUser(req: Request, res: Response) {
+    try {
+      const usuario = await user.findOne({
+        order: [['createdAt', 'DESC']]
+      });
+
+      if (usuario) {
+        res.status(200).json(usuario);
+      } else {
+        res.status(404).json({ message: 'No se encontró ningún usuario.' });
+      }
+    } catch (error) {
+      console.error('Error al obtener el último usuario:', error);
+      res.status(500).json({ message: 'Error al obtener el último usuario.' });
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response) {
     try {
       const users = await user.findAll();
@@ -117,4 +135,5 @@ export default class UserController {
       return res.status(500).json({ message: "Error al obtener usuario." });
     }
   }
+
 }  

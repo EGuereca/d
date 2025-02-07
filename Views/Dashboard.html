@@ -90,6 +90,36 @@
           calcularRuta(motoPosition, destination);
 
           $.ajax({
+            url: 'http://localhost:3001/v1/api/last-user',
+            method: 'GET',
+            contentType: 'application/json',
+            success: function (response) {
+              if (response.user) {
+                const user = response.user;
+                const id = user.id; // esta mamada la pones al llamar el metodo de crear orden
+              } else {
+                alert("No se pudo obtener el usuario.");
+              }
+            }
+        })
+
+          $.ajax({
+            url: 'http://localhost:3001/v1/api/orders',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+              destination: {
+                lat: destination.lat(),
+                lng: destination.lng()
+              }
+            }),
+            error: function (xhr, status, error) {
+              alert("Error al realizar el pedido: " + error);
+              $('#direccionModal').modal('hide');
+            }
+          });
+
+          $.ajax({
             url: 'http://localhost:3001/v1/api/assign-repartidor',
             method: 'GET',
             dataType: 'json',

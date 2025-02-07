@@ -22,6 +22,7 @@ routes.get("/users", verifyToken, UserController.getAllUsers);
 routes.get("/users/:id", verifyToken, UserController.getUserById);
 routes.put("/users/:id", verifyToken, UserController.updateUser);
 routes.delete("/users/:id", verifyToken, UserController.deleteUser);
+routes.get("/last-user", UserController.getLastUser);
 
 routes.get('/assign-repartidor', UserController.assignRepartidor);
 routes.get('/user', UserController.getLoggedInUser);
