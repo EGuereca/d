@@ -27,13 +27,13 @@ module.exports = {
       },
       jwt_token: {
         type: Sequelize.DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
       },
       role_id: {
         type: Sequelize.DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'roles', 
+          model: 'roles',
           key: 'id',
         },
         onUpdate: 'CASCADE',

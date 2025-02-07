@@ -9,7 +9,7 @@ dotenv.config();
 export default class AuthController {
   static async register(req: Request, res: Response) {
     try {
-      const { name, email, phone, password } = req.body;
+      const { name, email, phone, password, role } = req.body;
       if (!name || !email || !password || !phone) {
         return res.status(400).json({ message: 'Campos incompletos.' });
       }
@@ -32,7 +32,7 @@ export default class AuthController {
         phone,
         password: hashedPassword, // Guardar la contraseña encriptada
         jwt_token: token,
-        role_id: 1, // Asignar el rol de cliente por defecto
+        role_id: role, // Asignar el rol de cliente por defecto
         createdAt: new Date(),
         updatedAt: new Date(),
       });
