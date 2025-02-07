@@ -133,4 +133,14 @@ export default class OrdersController {
             res.status(500).json({ message: 'Error al obtener productos.' });
         }
     }
+
+    static async getLastOrder(req: Request, res: Response) {
+        try {
+            const order = await Order.findOne({ order: [['createdAt', 'DESC']] });
+            res.status(200).json(order);
+        } catch (error) {
+            console.error('Error al obtener la última orden:', error);
+            res.status(500).json({ error: 'Error al obtener la última orden.' });
+        }
+    }
 }

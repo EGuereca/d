@@ -40,6 +40,7 @@ routes.put("/orders/:id", OrdersController.updateOrder);
 routes.get("/orders/:id/total", OrdersController.getTotal);
 routes.post("/orders/details", OrdersController.createOrderDetail);
 routes.get("/orders/:order_id/details", OrdersController.getOrderDetails);
+routes.get("/orders/last/", OrdersController.getLastOrder);
 
 // Rutas de productos
 routes.get("/products", OrdersController.getProducts);

@@ -293,8 +293,25 @@
   </footer>
 </body>
 <script>
-  function cancelarCompra() {
-    const orderId = "ID_DEL_PEDIDO"; // Reemplaza esto con el ID real del pedido
+
+  function ultimoPedido() {
+    $.ajax({
+      url: 'http://localhost:3001/v1/api/orders',
+      type: 'GET',
+      contentType: 'application/json',
+      success: function (response){
+        const order = response.orders[response.orders.length - 1];
+        if (order.id) {
+          cancelarCompra(order.id);
+        } else {
+          alert('No se encontro orden mai');
+        }
+      }
+    })
+  }
+
+  function cancelarCompra(orderId) {
+    const orderId = orderId; 
 
     $.ajax({
       url: `http://localhost:3001/v1/api/orders/${orderId}`,
