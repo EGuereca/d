@@ -1,6 +1,26 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const productsContainer = document.getElementById("products-container");
 
+    // localStorage.getItem('role_id'); 
+    // if (!localStorage.getItem('role_id')) {
+    //     window.location.href = './Login.html';
+    // }
+    // // Redirección según rol
+    //     switch (data.user.role_id) {
+    //         case 1:  // Cliente
+    //             window.location.href = './Dashboard.html';
+    //             break;
+    //         case 2:  // Administrador
+    //             window.location.href = './Dashboard_Admin.html';
+    //             break;
+    //         case 3:  // Empleado
+    //             window.location.href = './Dashboard_Repa.html';
+    //             break;
+    //         default: // Si el rol no es reconocido
+    //             window.location.href = './login.html';
+    //             break;
+    //     }
+    
     // Función para obtener productos
     async function fetchProducts() {
         try {
@@ -41,7 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Función para agregar un producto a la orden
     window.addToOrder = async (productId) => {
         const quantity = document.getElementById(`qty-${productId}`).value;
-        const order_id = 1;
         try {
             const response = await fetch("http://localhost:3001/v1/api/orders/details", {
                 method: "POST",

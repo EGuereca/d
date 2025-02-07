@@ -113,7 +113,11 @@ export default class OrdersController {
         try {
             const { order_id } = req.params;
             const orderDetails = await OrderDetail.findAll({ where: { order_id } });
-            res.status(200).json(orderDetails);
+            const details = await Promise.all(orderDetails.map(async (detail) => {
+                const product = await Product.findByPk(detail.product_id);
+                return { ...detail.toJSON(), product };
+            }));
+            res.status(200).json(details);
         } catch (error) {
             console.error('Error al obtener los detalles de la orden:', error);
             res.status(500).json({ error: 'Error al obtener los detalles de la orden.' });

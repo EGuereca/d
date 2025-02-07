@@ -9,35 +9,86 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        function cargarCarrito() {
-            const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-            const carritoContainer = document.getElementById('carrito');
-            carritoContainer.innerHTML = '';
-            let total = 0;
-            carrito.forEach((item, index) => {
-                const itemElement = document.createElement('li');
-                itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
-                itemElement.innerHTML = `
-                    ${item.producto} - Cantidad: ${item.cantidad} - Precio: $${item.precio} - Subtotal: $${item.cantidad * item.precio}
-                    <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${index})">Eliminar</button>
-                `;
-                carritoContainer.appendChild(itemElement);
-                total += item.cantidad * item.precio;
-            });
-            const totalElement = document.createElement('li');
-            totalElement.className = 'list-group-item active';
-            totalElement.textContent = `Total: $${total}`;
-            carritoContainer.appendChild(totalElement);
+        // function cargarCarrito() {
+        //     const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        //     const carritoContainer = document.getElementById('carrito');
+        //     carritoContainer.innerHTML = '';
+        //     let total = 0;
+        //     carrito.forEach((item, index) => {
+        //         const itemElement = document.createElement('li');
+        //         itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
+        //         itemElement.innerHTML = `
+        //             ${item.producto} - Cantidad: ${item.cantidad} - Precio: $${item.precio} - Subtotal: $${item.cantidad * item.precio}
+        //             <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${index})">Eliminar</button>
+        //         `;
+        //         carritoContainer.appendChild(itemElement);
+        //         total += item.cantidad * item.precio;
+        //     });
+        //     const totalElement = document.createElement('li');
+        //     totalElement.className = 'list-group-item active';
+        //     totalElement.textContent = `Total: $${total}`;
+        //     carritoContainer.appendChild(totalElement);
+        // }
+
+        // function eliminarDelCarrito(index) {
+        //     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        //     carrito.splice(index, 1);
+        //     localStorage.setItem('carrito', JSON.stringify(carrito));
+        //     cargarCarrito();
+        // }
+
+        // window.onload = cargarCarrito;
+        async function cargarCarrito() {
+            try {
+                const response = await fetch("http://localhost:3001/v1/api/orders/1/details");
+                if (!response.ok) {
+                    throw new Error("Error al obtener los datos del carrito");
+                }
+                
+                const data = await response.json();
+                const carritoContainer = document.getElementById('carrito');
+                carritoContainer.innerHTML = '';
+
+                let total = 0;
+                
+                // Verifica si data es un array
+                const items = Array.isArray(data) ? data : [data];
+
+                items.forEach(item => {
+                    const producto = {
+                        nombre: item.product.nombre,
+                        cantidad: item.quantity,
+                        precio: item.product.precio,
+                        subtotal: item.quantity * item.product.precio
+                    };
+
+                    const itemElement = document.createElement('li');
+                    itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    itemElement.innerHTML = `
+                        ${producto.nombre} - Cantidad: ${producto.cantidad} - Precio: $${producto.precio} - Subtotal: $${producto.subtotal}
+                        <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito()">Eliminar</button>
+                    `;
+                    carritoContainer.appendChild(itemElement);
+                    total += producto.subtotal;
+                });
+
+                // Agregar total
+                const totalElement = document.createElement('li');
+                totalElement.className = 'list-group-item active';
+                totalElement.textContent = `Total: $${total}`;
+                carritoContainer.appendChild(totalElement);
+            } catch (error) {
+                console.error("Error al cargar el carrito:", error);
+            }
         }
 
-        function eliminarDelCarrito(index) {
-            let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-            carrito.splice(index, 1);
-            localStorage.setItem('carrito', JSON.stringify(carrito));
-            cargarCarrito();
+
+        function eliminarDelCarrito() {
+            document.getElementById('carrito').innerHTML = '';
         }
 
         window.onload = cargarCarrito;
+
     </script>
 </head>
 <body>
