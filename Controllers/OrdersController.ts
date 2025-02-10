@@ -193,4 +193,5 @@ export default class OrdersController {
             res.status(500).json({ error: 'Error al eliminar el producto del carrito.' });
         }
     }
+
 }

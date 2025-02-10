@@ -63,56 +63,25 @@
         }
 
         async function eliminarDelCarrito(productId) {
-            try {
-                const orderId = 1; // Reemplaza con el ID de la orden real
-                const response = await fetch(`http://localhost:3001/v1/api/orders/${orderId}/details/${productId}`, {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + localStorage.getItem("token")
-                    }
-                });
+      try {
+        const orderId = 1; // Reemplaza con el ID de la orden real
+        const response = await fetch(`http://localhost:3001/v1/api/orders/${orderId}/details/${productId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token")
+          }
+        });
 
-                if (!response.ok) {
-                    throw new Error("Error al eliminar el producto del carrito");
-                }
-
-                // Eliminar del localStorage
-                let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-                carrito = carrito.filter(item => item.id !== productId);
-                localStorage.setItem('carrito', JSON.stringify(carrito));
-
-                // Ocultar el elemento en la interfaz de usuario
-                const itemElement = document.getElementById(`producto-${productId}`);
-                if (itemElement) {
-                    itemElement.style.display = 'none';
-                }
-
-                // Actualizar el total
-                actualizarTotal();
-            } catch (error) {
-                console.error("Error al eliminar el producto del carrito:", error);
-            }
+        if (!response.ok) {
+          throw new Error("Error al eliminar el producto del carrito");
         }
 
-        function actualizarTotal() {
-            const carritoContainer = document.getElementById('carrito');
-            const items = carritoContainer.getElementsByClassName('list-group-item');
-            let total = 0;
-
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].style.display !== 'none' && items[i].id !== 'total') {
-                    const subtotalText = items[i].innerText.split('Subtotal: $')[1];
-                    const subtotal = parseFloat(subtotalText);
-                    total += subtotal;
-                }
-            }
-
-            const totalElement = document.getElementById('total');
-            if (totalElement) {
-                totalElement.textContent = `Total: $${total}`;
-            }
-        }
+        cargarCarrito();
+      } catch (error) {
+        console.error("Error al eliminar el producto del carrito:", error);
+      }
+    }
 
         async function realizarCompra() {
             window.location.href = "Dashboard.html";
