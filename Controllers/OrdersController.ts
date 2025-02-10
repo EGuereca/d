@@ -18,7 +18,7 @@ export default class OrdersController {
     static async getOrderById(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const order = await Order.findByPk(id);
+            const order = await Order.findByPk(Number(id));
             if (order) {
                 res.status(200).json(order);
             } else {
@@ -32,18 +32,32 @@ export default class OrdersController {
 
     static async createOrder(req: Request, res: Response) {
         try {
-            const { cliente_id, } = req.body;
+            const { cliente_id } = req.body;
 
-            const repartidor = await User.findOne({ where: { role_id: '3' } });
+            if (!cliente_id || isNaN(Number(cliente_id))) {
+                return res.status(400).json({ message: 'cliente_id es inválido o no fue proporcionado.' });
+            }
 
-            const repartidor_id = repartidor?.id;
+            // Buscar repartidor con role_id = 3
+            const repartidor = await User.findOne({ where: { role_id: 3 } });
 
-            const cliente = await User.findByPk(cliente_id);
+            if (!repartidor) {
+                return res.status(404).json({ message: 'No se encontró un repartidor disponible.' });
+            }
+
+            // Buscar cliente
+            const cliente = await User.findByPk(Number(cliente_id));
             if (!cliente) {
                 return res.status(404).json({ message: 'Cliente no encontrado.' });
             }
 
-            const order = await Order.create({ cliente_id, repartidor_id, total: 0, estado: 'pendiente' });
+            // Crear orden
+            const order = await Order.create({
+                cliente_id: cliente.id,
+                repartidor_id: repartidor.id,
+                total: 0,
+                estado: 'pendiente',
+            });
 
             res.status(201).json({ message: 'Orden creada correctamente', order });
         } catch (error) {
@@ -57,7 +71,7 @@ export default class OrdersController {
             const { id } = req.params;
             const { estado } = req.body;
 
-            const order = await Order.findByPk(id);
+            const order = await Order.findByPk(Number(id));
             if (!order) {
                 return res.status(404).json({ message: 'Orden no encontrada.' });
             }
@@ -71,10 +85,10 @@ export default class OrdersController {
         }
     }
 
-    static async getTotal(req: Request, res: Response){
+    static async getTotal(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const order = await Order.findByPk(id);
+            const order = await Order.findByPk(Number(id));
             if (order) {
                 res.status(200).json(order.total);
             } else {
@@ -90,12 +104,12 @@ export default class OrdersController {
         try {
             const { order_id, product_id, quantity } = req.body;
 
-            const order = await Order.findByPk(order_id);
+            const order = await Order.findByPk(Number(order_id));
             if (!order) {
                 return res.status(404).json({ message: 'Orden no encontrada.' });
             }
 
-            const product = await Product.findByPk(product_id);
+            const product = await Product.findByPk(Number(product_id));
             if (!product) {
                 return res.status(404).json({ message: 'Producto no encontrado.' });
             }
@@ -112,7 +126,7 @@ export default class OrdersController {
     static async getOrderDetails(req: Request, res: Response) {
         try {
             const { order_id } = req.params;
-            const orderDetails = await OrderDetail.findAll({ where: { order_id } });
+            const orderDetails = await OrderDetail.findAll({ where: { order_id: Number(order_id) } });
             const details = await Promise.all(orderDetails.map(async (detail) => {
                 const product = await Product.findByPk(detail.product_id);
                 return { ...detail.toJSON(), product };
@@ -141,6 +155,42 @@ export default class OrdersController {
         } catch (error) {
             console.error('Error al obtener la última orden:', error);
             res.status(500).json({ error: 'Error al obtener la última orden.' });
+        }
+    }
+    static async getOrderStatus(req: Request, res: Response) {
+        try {
+            const { orderId } = req.params;
+            const order = await Order.findByPk(Number(orderId));
+
+            if (order) {
+                res.status(200).json({ estado: order.estado });
+            } else {
+                res.status(404).json({ message: 'Orden no encontrada.' });
+            }
+        } catch (error) {
+            console.error('Error al obtener el estado de la orden:', error);
+            res.status(500).json({ error: 'Error al obtener el estado de la orden.' });
+        }
+    }
+    static async deleteOrderDetail(req: Request, res: Response) {
+        try {
+            const { orderId, productId } = req.params;
+            const orderDetail = await OrderDetail.findOne({
+                where: {
+                    order_id: Number(orderId),
+                    product_id: Number(productId)
+                }
+            });
+
+            if (!orderDetail) {
+                return res.status(404).json({ message: 'Detalle de orden no encontrado.' });
+            }
+
+            await orderDetail.destroy();
+            res.status(200).json({ message: 'Producto eliminado del carrito correctamente.' });
+        } catch (error) {
+            console.error('Error al eliminar el producto del carrito:', error);
+            res.status(500).json({ error: 'Error al eliminar el producto del carrito.' });
         }
     }
 }

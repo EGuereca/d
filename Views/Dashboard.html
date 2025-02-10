@@ -11,7 +11,7 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
   <style>
-   body {
+    body {
       background-color: #121212;
       color: #e0e0e0;
     }
@@ -21,7 +21,8 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     }
 
-    .navbar-brand, .nav-link {
+    .navbar-brand,
+    .nav-link {
       color: #e0e0e0 !important;
     }
 
@@ -49,7 +50,8 @@
       color: #e0e0e0;
     }
 
-    .modal-header, .modal-footer {
+    .modal-header,
+    .modal-footer {
       border-color: #333;
     }
 
@@ -79,198 +81,272 @@
     async defer></script>
   <script>
     let map, marker, directionsService, directionsRenderer;
-let motoPosition, destination;
-let routePath = [];
-let deliveryMarker = null;
+    let motoPosition, destination;
+    let routePath = [];
+    let deliveryMarker = null;
+    let repartidorMarker = null;
+    let repartidorInfo = null;
 
-document.addEventListener("DOMContentLoaded", () => iniciarMapa());
+    document.addEventListener("DOMContentLoaded", () => {
+      iniciarMapa();
+      cargarCarrito();
+    });
 
-function iniciarMapa() {
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      motoPosition = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      };
+    function iniciarMapa() {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          motoPosition = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
 
-      map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 15,
-        center: motoPosition,
+          map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 15,
+            center: motoPosition,
+          });
+
+          marker = new google.maps.Marker({
+            position: motoPosition,
+            map: map,
+            title: "Moto",
+            icon: {
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              scale: 4,
+              strokeColor: "#FF0000",
+              fillColor: "#FF0000",
+              fillOpacity: 1,
+            },
+          });
+
+          directionsService = new google.maps.DirectionsService();
+          directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+          directionsRenderer.setMap(map);
+        },
+        () => alert("No se pudo obtener la ubicación actual.")
+      );
+    }
+
+    function elegirDestino() {
+      let direccion = document.getElementById("direccionInput").value.trim();
+      if (!direccion) {
+        alert("Por favor, ingrese una dirección de entrega.");
+        return;
+      }
+
+      let geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ address: direccion }, function (results, status) {
+        if (status !== "OK") {
+          alert("No se pudo encontrar la dirección. Intente de nuevo.");
+          return;
+        }
+
+        destination = results[0].geometry.location;
+        actualizarMarcadorDestino();
+        calcularRuta(motoPosition, destination);
+        asignarRepartidor();
+        $('#direccionModal').modal('hide'); // Cerrar el modal
       });
+    }
 
-      marker = new google.maps.Marker({
-        position: motoPosition,
+    function actualizarMarcadorDestino() {
+      if (deliveryMarker) deliveryMarker.setMap(null);
+
+      deliveryMarker = new google.maps.Marker({
+        position: destination,
         map: map,
-        title: "Moto",
+        title: "Destino",
         icon: {
-          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
           scale: 4,
-          strokeColor: "#FF0000",
-          fillColor: "#FF0000",
+          strokeColor: "#0000FF",
+          fillColor: "#0000FF",
           fillOpacity: 1,
         },
       });
 
-      directionsService = new google.maps.DirectionsService();
-      directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
-      directionsRenderer.setMap(map);
-    },
-    () => alert("No se pudo obtener la ubicación actual.")
-  );
-}
-
-function elegirDestino() {
-  let direccion = document.getElementById("direccionInput").value.trim();
-  if (!direccion) {
-    alert("Por favor, ingrese una dirección de entrega.");
-    return;
-  }
-
-  let geocoder = new google.maps.Geocoder();
-  geocoder.geocode({ address: direccion }, function (results, status) {
-    if (status !== "OK") {
-      alert("No se pudo encontrar la dirección. Intente de nuevo.");
-      return;
+      map.setCenter(destination);
     }
-    
-    destination = results[0].geometry.location;
-    actualizarMarcadorDestino();
-    calcularRuta(motoPosition, destination);
-    const id = getUser();
-    realizarPedido(id);
-  });
-}
 
-function actualizarMarcadorDestino() {
-  if (deliveryMarker) deliveryMarker.setMap(null);
-  
-  deliveryMarker = new google.maps.Marker({
-    position: destination,
-    map: map,
-    title: "Destino",
-    icon: {
-      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-      scale: 4,
-      strokeColor: "#0000FF",
-      fillColor: "#0000FF",
-      fillOpacity: 1,
-    },
-  });
+    function calcularRuta(origen, destino) {
+      directionsService.route(
+        {
+          origin: origen,
+          destination: destino,
+          travelMode: google.maps.TravelMode.DRIVING,
+        },
+        (response, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(response);
+            routePath = response.routes[0].overview_path;
+          } else {
+            alert("No se pudo calcular la ruta: " + status);
+          }
+        }
+      );
+    }
 
-  map.setCenter(destination);
-}
+    function asignarRepartidor() {
+      $.ajax({
+        url: "http://localhost:3001/v1/api/assign-repartidor",
+        method: "GET",
+        dataType: "json",
+        success: function (response) {
+          if (response.repartidor) {
+            repartidorInfo = response.repartidor;
+            $("#repartidor-info").html(`
+              <div class="jumbotron">
+                <h3 class="display-5">Repartidor Asignado: ${repartidorInfo.name}</h3>
+                <p class="lead">Estos son los datos del repartidor asignado a tu pedido.</p>
+                <hr class="my-4">
+                <ul class="list-group">
+                  <li class="list-group-item"><strong>Email:</strong> ${repartidorInfo.email}</li>
+                  <li class="list-group-item"><strong>Teléfono:</strong> ${repartidorInfo.phone}</li>
+                </ul>
+              </div>
+            `);
+            alert("Pedido realizado con éxito. Repartidor asignado: " + repartidorInfo.name);
+            iniciarSeguimientoRepartidor();
+          } else {
+            alert("No hay repartidores disponibles. El pedido no se realizará.");
+            cancelarCompra();
+          }
+        },
+        error: (xhr, status, error) => alert("Error al asignar repartidor: " + error),
+      });
+    }
 
-function getUser(){
-  $.ajax({
-    url: "http://localhost:3001/v1/api/last-user",
-    method: "GET",
-    success: (response) => { return response.id; },
-    error: (xhr, status, error) => alert("Error al obtener el usuario: " + error),
-  });
-}
+    function iniciarSeguimientoRepartidor() {
+      if (repartidorMarker) repartidorMarker.setMap(null);
 
-function calcularRuta(origen, destino) {
-  directionsService.route(
-    {
-      origin: origen,
-      destination: destino,
-      travelMode: google.maps.TravelMode.DRIVING,
-    },
-    (response, status) => {
-      if (status === "OK") {
-        directionsRenderer.setDirections(response);
-        routePath = response.routes[0].overview_path;
-      } else {
-        alert("No se pudo calcular la ruta: " + status);
+      repartidorMarker = new google.maps.Marker({
+        position: motoPosition,
+        map: map,
+        title: "Repartidor",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          strokeColor: "#00FF00",
+          fillColor: "#00FF00",
+          fillOpacity: 1,
+        },
+      });
+
+      // Simulación de movimiento del repartidor
+      let index = 0;
+      const interval = setInterval(() => {
+        if (index < routePath.length) {
+          repartidorMarker.setPosition(routePath[index]);
+          map.setCenter(routePath[index]);
+          index++;
+        } else {
+          clearInterval(interval);
+          alert("El repartidor ha llegado a su destino.");
+        }
+      }, 1000);
+    }
+
+    function cancelarCompra() {
+      if (deliveryMarker) deliveryMarker.setMap(null);
+      if (directionsRenderer) directionsRenderer.set("directions", null);
+      routePath = [];
+      destination = null;
+      if (motoPosition) {
+        marker.setPosition(motoPosition);
+        map.setCenter(motoPosition);
+      }
+      alert("La compra ha sido cancelada y el viaje del repartidor se detuvo.");
+      $("#repartidor-info").html(`
+        <div class="alert alert-warning" role="alert">
+          Se canceló la compra. No hay repartidor asignado.
+        </div>
+      `);
+    }
+
+    function cerrarSesion() {
+      $.ajax({
+        url: "http://localhost:3001/v1/api/logout",
+        type: "POST",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+        success: (response) => {
+          alert(response.message);
+          window.location.href = "Login.html";
+        },
+        error: (xhr, status, error) => alert("Error al cerrar sesión: " + error),
+      });
+    }
+
+    async function cargarCarrito() {
+      try {
+        const orderId = 1; // Reemplaza con el ID de la orden real
+        const response = await fetch(`http://localhost:3001/v1/api/orders/${orderId}/details`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token")
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Error al obtener los datos del carrito");
+        }
+
+        const data = await response.json();
+        const carritoContainer = document.getElementById('carrito');
+        carritoContainer.innerHTML = '';
+
+        let total = 0;
+
+        data.forEach((item, index) => {
+          const producto = {
+            id: item.product.id,
+            nombre: item.product.nombre,
+            cantidad: item.quantity,
+            precio: item.product.precio,
+            subtotal: item.quantity * item.product.precio
+          };
+
+          const itemElement = document.createElement('li');
+          itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
+          itemElement.innerHTML = `
+            ${producto.nombre} - Cantidad: ${producto.cantidad} - Precio: $${producto.precio} - Subtotal: $${producto.subtotal}
+            <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${producto.id})">Eliminar</button>
+          `;
+          carritoContainer.appendChild(itemElement);
+          total += producto.subtotal;
+        });
+
+        // Agregar total
+        const totalElement = document.createElement('li');
+        totalElement.className = 'list-group-item active';
+        totalElement.textContent = `Total: $${total}`;
+        carritoContainer.appendChild(totalElement);
+      } catch (error) {
+        console.error("Error al cargar el carrito:", error);
       }
     }
-  );
-}
-function realizarPedido(id) {
-  $.ajax({
-    url: "http://localhost:3001/v1/api/orders",
-    method: "POST",
-    contentType: "application/json",
-    data: JSON.stringify({
-      cliente_id: id,
-    }),
-    success: asignarRepartidor,
-    error: (xhr, status, error) => alert("Error al realizar el pedido: " + error),
-  });
-}
 
-function asignarRepartidor() {
-  $.ajax({
-    url: "http://localhost:3001/v1/api/assign-repartidor",
-    method: "GET",
-    dataType: "json",
-    success: function (response) {
-      if (response.repartidor) {
-        const repartidor = response.repartidor;
-        $("#repartidor-info").html(`
-          <div class="jumbotron">
-            <h3 class="display-5">Repartidor Asignado: ${repartidor.name}</h3>
-            <p class="lead">Estos son los datos del repartidor asignado a tu pedido.</p>
-            <hr class="my-4">
-            <ul class="list-group">
-              <li class="list-group-item"><strong>Email:</strong> ${repartidor.email}</li>
-              <li class="list-group-item"><strong>Teléfono:</strong> ${repartidor.phone}</li>
-            </ul>
-          </div>
-        `);
-        alert("Pedido realizado con éxito. Repartidor asignado: " + repartidor.name);
-      } else {
-        alert("No hay repartidores disponibles. El pedido no se realizará.");
-        cancelarCompra();
+    async function eliminarDelCarrito(productId) {
+      try {
+        const orderId = 1; // Reemplaza con el ID de la orden real
+        const response = await fetch(`http://localhost:3001/v1/api/orders/${orderId}/details/${productId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token")
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Error al eliminar el producto del carrito");
+        }
+
+        cargarCarrito();
+      } catch (error) {
+        console.error("Error al eliminar el producto del carrito:", error);
       }
-    },
-    error: (xhr, status, error) => alert("Error al asignar repartidor: " + error),
-  });
-}
-
-function setToEstado(indice) {
-  if (routePath.length === 0) {
-    alert("Aún no se ha calculado la ruta.");
-    return;
-  }
-  let pos = routePath[Math.floor((routePath.length - 1) * indice)];
-  marker.setPosition(pos);
-  map.setCenter(pos);
-}
-
-function cancelarCompra() {
-  if (deliveryMarker) deliveryMarker.setMap(null);
-  if (directionsRenderer) directionsRenderer.set("directions", null);
-  routePath = [];
-  destination = null;
-  if (motoPosition) {
-    marker.setPosition(motoPosition);
-    map.setCenter(motoPosition);
-  }
-  alert("La compra ha sido cancelada y el viaje del repartidor se detuvo.");
-  $("#repartidor-info").html(`
-    <div class="alert alert-warning" role="alert">
-      Se canceló la compra. No hay repartidor asignado.
-    </div>
-  `);
-}
-
-function cerrarSesion() {
-  $.ajax({
-    url: "http://localhost:3001/v1/api/logout",
-    type: "POST",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    },
-    success: (response) => {
-      alert(response.message);
-      window.location.href = "Login.html";
-    },
-    error: (xhr, status, error) => alert("Error al cerrar sesión: " + error),
-  });
-}
-
-
+    }
   </script>
 </head>
 
@@ -297,7 +373,8 @@ function cerrarSesion() {
 
   <div class="container mt-5 pt-5">
     <h1 class="text-center mb-4">Simular Envío de Carrito</h1>
-    <button class="btn btn-success btn-lg btn-block btn-custom" data-bs-toggle="modal" data-bs-target="#direccionModal">Pedir
+    <button class="btn btn-success btn-lg btn-block btn-custom" data-bs-toggle="modal"
+      data-bs-target="#direccionModal">Pedir
       Carrito</button>
 
     <div id="repartidor-info" class="mt-4">
@@ -330,12 +407,12 @@ function cerrarSesion() {
   </div>
 
   <div class="container mt-4">
-    <div class="d-grid gap-2 d-md-block text-center">
-      <button class="btn btn-primary btn-sm btn-custom" style="width: 150px;" onclick="setToSalida()">Salida</button>
-      <button class="btn btn-warning btn-sm btn-custom" style="width: 150px;" onclick="setToProceso()">En Proceso</button>
-      <button class="btn btn-success btn-sm btn-custom" style="width: 150px;" onclick="setToFinal()">Final</button>
+    <h1 class="text-center mb-4">Detalles del Carrito</h1>
+    <ul id="carrito" class="list-group mb-4"></ul>
+    <div class="text-center">
+      <button class="btn btn-danger btn-lg btn-block btn-custom mt-3" onclick="cancelarCompra()">Cancelar
+        Compra</button>
     </div>
-    <button class="btn btn-danger btn-lg btn-block btn-custom mt-3" onclick="cancelarCompra()">Cancelar Compra</button>
   </div>
 
   <footer class="footer text-center py-3 mt-4">

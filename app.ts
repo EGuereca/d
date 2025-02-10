@@ -6,7 +6,7 @@ import { Client } from "@googlemaps/google-maps-services-js";
 
 // Inicializar Express
 const app = express();
-const PORT = process.env.PORT || 3333;
+const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors()); // Permitir CORS para que el frontend pueda consumir la API
@@ -28,7 +28,7 @@ app.get('/v1/api/google-maps/test', async (req, res) => {
 
         res.json(response.data);
     } catch (error) {
-        console.error('Error con Google Maps API:', error);
+        console.error('Error con Google Maps API:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Error al conectar con Google Maps API' });
     }
 });

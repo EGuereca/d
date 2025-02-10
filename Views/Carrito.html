@@ -10,38 +10,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        // function cargarCarrito() {
-        //     const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-        //     const carritoContainer = document.getElementById('carrito');
-        //     carritoContainer.innerHTML = '';
-        //     let total = 0;
-        //     carrito.forEach((item, index) => {
-        //         const itemElement = document.createElement('li');
-        //         itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
-        //         itemElement.innerHTML = `
-        //             ${item.producto} - Cantidad: ${item.cantidad} - Precio: $${item.precio} - Subtotal: $${item.cantidad * item.precio}
-        //             <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${index})">Eliminar</button>
-        //         `;
-        //         carritoContainer.appendChild(itemElement);
-        //         total += item.cantidad * item.precio;
-        //     });
-        //     const totalElement = document.createElement('li');
-        //     totalElement.className = 'list-group-item active';
-        //     totalElement.textContent = `Total: $${total}`;
-        //     carritoContainer.appendChild(totalElement);
-        // }
-
-        // function eliminarDelCarrito(index) {
-        //     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-        //     carrito.splice(index, 1);
-        //     localStorage.setItem('carrito', JSON.stringify(carrito));
-        //     cargarCarrito();
-        // }
-
-        // window.onload = cargarCarrito;
         async function cargarCarrito() {
             try {
-                const response = await fetch("http://localhost:3001/v1/api/orders/1/details");
+                const orderId = 1; // Reemplaza con el ID de la orden real
+                const response = await fetch(`http://localhost:3001/v1/api/orders/${orderId}/details`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + localStorage.getItem("token")
+                    }
+                });
+
                 if (!response.ok) {
                     throw new Error("Error al obtener los datos del carrito");
                 }
@@ -52,11 +31,9 @@
 
                 let total = 0;
 
-                // Verifica si data es un array
-                const items = Array.isArray(data) ? data : [data];
-
-                items.forEach(item => {
+                data.forEach((item, index) => {
                     const producto = {
+                        id: item.product.id,
                         nombre: item.product.nombre,
                         cantidad: item.quantity,
                         precio: item.product.precio,
@@ -65,9 +42,10 @@
 
                     const itemElement = document.createElement('li');
                     itemElement.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    itemElement.id = `producto-${producto.id}`;
                     itemElement.innerHTML = `
                         ${producto.nombre} - Cantidad: ${producto.cantidad} - Precio: $${producto.precio} - Subtotal: $${producto.subtotal}
-                        <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito()">Eliminar</button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${producto.id})">Eliminar</button>
                     `;
                     carritoContainer.appendChild(itemElement);
                     total += producto.subtotal;
@@ -76,6 +54,7 @@
                 // Agregar total
                 const totalElement = document.createElement('li');
                 totalElement.className = 'list-group-item active';
+                totalElement.id = 'total';
                 totalElement.textContent = `Total: $${total}`;
                 carritoContainer.appendChild(totalElement);
             } catch (error) {
@@ -83,13 +62,63 @@
             }
         }
 
+        async function eliminarDelCarrito(productId) {
+            try {
+                const orderId = 1; // Reemplaza con el ID de la orden real
+                const response = await fetch(`http://localhost:3001/v1/api/orders/${orderId}/details/${productId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + localStorage.getItem("token")
+                    }
+                });
 
-        function eliminarDelCarrito() {
-            document.getElementById('carrito').innerHTML = '';
+                if (!response.ok) {
+                    throw new Error("Error al eliminar el producto del carrito");
+                }
+
+                // Eliminar del localStorage
+                let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+                carrito = carrito.filter(item => item.id !== productId);
+                localStorage.setItem('carrito', JSON.stringify(carrito));
+
+                // Ocultar el elemento en la interfaz de usuario
+                const itemElement = document.getElementById(`producto-${productId}`);
+                if (itemElement) {
+                    itemElement.style.display = 'none';
+                }
+
+                // Actualizar el total
+                actualizarTotal();
+            } catch (error) {
+                console.error("Error al eliminar el producto del carrito:", error);
+            }
+        }
+
+        function actualizarTotal() {
+            const carritoContainer = document.getElementById('carrito');
+            const items = carritoContainer.getElementsByClassName('list-group-item');
+            let total = 0;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].style.display !== 'none' && items[i].id !== 'total') {
+                    const subtotalText = items[i].innerText.split('Subtotal: $')[1];
+                    const subtotal = parseFloat(subtotalText);
+                    total += subtotal;
+                }
+            }
+
+            const totalElement = document.getElementById('total');
+            if (totalElement) {
+                totalElement.textContent = `Total: $${total}`;
+            }
+        }
+
+        async function realizarCompra() {
+            window.location.href = "Dashboard.html";
         }
 
         window.onload = cargarCarrito;
-
     </script>
 </head>
 
@@ -112,6 +141,7 @@
         <ul id="carrito" class="list-group mb-4"></ul>
         <div class="text-center">
             <a href="./Menu.html" class="btn btn-primary">Seguir Comprando</a>
+            <button class="btn btn-success" onclick="realizarCompra()">Ver Detalles del Carrito</button>
         </div>
     </div>
     <footer class="bg-light text-dark text-center py-3 mt-4">

@@ -15,7 +15,7 @@ console.log("Rutas cargadas correctamente");
 // Rutas de autenticación
 routes.post("/register", AuthController.register);
 routes.post("/login", AuthController.login);
-routes.post("/logout",  AuthController.logout);
+routes.post("/logout", AuthController.logout);
 
 // Rutas de usuarios
 routes.get("/users", verifyToken, UserController.getAllUsers);
@@ -42,7 +42,8 @@ routes.get("/orders/:id/total", OrdersController.getTotal);
 routes.post("/orders/details", OrdersController.createOrderDetail);
 routes.get("/orders/:order_id/details", OrdersController.getOrderDetails);
 routes.get("/orders/last/", OrdersController.getLastOrder);
-
+routes.get('/status/:orderId', OrdersController.getOrderStatus);
+routes.delete('/orders/:orderId/details/:productId', OrdersController.deleteOrderDetail);
 // Rutas de productos
 routes.get("/products", OrdersController.getProducts);
 
