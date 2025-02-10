@@ -112,22 +112,74 @@
     }
 
     function cancelarCompra() {
-      if (deliveryMarker) {
-        deliveryMarker.setMap(null);
-        deliveryMarker = null;
-      }
-      if (directionsRenderer) {
-        directionsRenderer.set('directions', null);
-      }
-      routePath = [];
-      destination = null;
-      if (motoPosition) {
-        marker.setPosition(motoPosition);
-        map.setCenter(motoPosition);
-      }
-      alert("La compra ha sido cancelada.");
-      $("#repartidor-info").html('');
+  const orderId = 1; // Reemplaza con el ID de la orden real
+  if (deliveryMarker) {
+    deliveryMarker.setMap(null);
+    deliveryMarker = null;
+  }
+  if (directionsRenderer) {
+    directionsRenderer.set('directions', null);
+  }
+  routePath = [];
+  destination = null;
+  if (motoPosition) {
+    marker.setPosition(motoPosition);
+    map.setCenter(motoPosition);
+  }
+  alert("La compra ha sido cancelada.");
+  $("#repartidor-info").html('');
+
+  $.ajax({
+    url: `http://localhost:3001/v1/api/orders/${orderId}`,
+    type: 'PUT',
+    headers: {
+      "Content-Type": "application/json",
+      'Authorization': 'Bearer ' + localStorage.getItem('token')
+    },
+    data: JSON.stringify({ estado: 'rechazado' }),
+    success: function(response) {
+      alert('Pedido cancelado exitosamente.');
+    },
+    error: function(xhr, status, error) {
+      alert('Error al cancelar pedido: ' + (xhr.responseText || error));
     }
+  });
+}
+
+function confirmarCompra() {
+  const orderId = 1; // Reemplaza con el ID de la orden real
+  if (deliveryMarker) {
+    deliveryMarker.setMap(null);
+    deliveryMarker = null;
+  }
+  if (directionsRenderer) {
+    directionsRenderer.set('directions', null);
+  }
+  routePath = [];
+  destination = null;
+  if (motoPosition) {
+    marker.setPosition(motoPosition);
+    map.setCenter(motoPosition);
+  }
+  alert("La compra ha sido confirmada.");
+  $("#repartidor-info").html('');
+
+  $.ajax({
+    url: `http://localhost:3001/v1/api/orders/${orderId}`,
+    type: 'PUT',
+    headers: {
+      "Content-Type": "application/json",
+      'Authorization': 'Bearer ' + localStorage.getItem('token')
+    },
+    data: JSON.stringify({ estado: 'enviado' }),
+    success: function(response) {
+      alert('Pedido confirmado exitosamente.');
+    },
+    error: function(xhr, status, error) {
+      alert('Error al confirmar pedido: ' + (xhr.responseText || error));
+    }
+  });
+}
 
     function cerrarSesion() {
       $.ajax({
@@ -235,7 +287,7 @@
 
   <div class="container mt-4">
     <h1 class="text-center">Repa</h1>
-    <button class="btn btn-success btn-sm" style="width: 150px;" onclick="consultarEstado()">Consultar estado</button>
+    <button class="btn btn-info btn-sm" style="width: 150px;" onclick="consultarEstado()">Consultar estado</button>
 
     <div id="repartidor-info"></div>
 
@@ -247,6 +299,11 @@
   <div class="container mt-4">
     <br>
     <button class="btn btn-danger btn-lg btn-block" onclick="cancelarCompra()">Cancelar Envío</button>
+  </div>
+
+  <div class="container mt-4">
+    <br>
+    <button class="btn btn-success btn-lg btn-block" onclick="confirmarCompra()">Confirmar Envio</button>
   </div>
 
   <!-- Modal para consultar el estado del pedido -->
