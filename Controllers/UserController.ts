@@ -7,7 +7,8 @@ export default class UserController {
   static async getLastUser(req: Request, res: Response) {
     try {
       const usuario = await user.findOne({
-        order: [['createdAt', 'DESC']]
+        order: [['createdAt', 'DESC']],
+        where: { role_id: 1 }
       });
 
       if (usuario) {
