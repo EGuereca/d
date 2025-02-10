@@ -35,7 +35,7 @@ routes.get("/avanzar", RepartidorController.avanzar);
 
 // Rutas de órdenes
 routes.get("/orders", OrdersController.getAllOrders);
-routes.get("/orders/:id", OrdersController.getOrderById);
+routes.get("/orders/:id", OrdersController.getOrder);
 routes.post("/orders", OrdersController.createOrder);
 routes.put("/orders/:id", OrdersController.updateOrder);
 routes.get("/orders/:id/total", OrdersController.getTotal);
