@@ -157,9 +157,9 @@
         },
         success: function (response) {
           let estadoTexto = {
-            'salida': 'En proceso de salida',
-            'proceso': 'En proceso',
-            'final': 'Finalizado'
+            'pendiente': 'En proceso de salida',
+            'aceptado': 'En proceso',
+            'enviado': 'Finalizado'
           }[response.estado] || 'Estado desconocido';
 
           // Construye un mensaje con todos los datos de la respuesta
