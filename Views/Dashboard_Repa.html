@@ -24,6 +24,9 @@
     let motoPosition, destination;
     let routePath = [];
     let deliveryMarker = null;
+    let userID = localStorage.getItem('user_id');
+
+    console.log(localStorage.getItem('user_id'));
 
     function iniciarMapa() {
       navigator.geolocation.getCurrentPosition((position) => {
@@ -112,8 +115,13 @@
     }
 
     function cancelarCompra() {
-  const orderId = 1; // Reemplaza con el ID de la orden real
-  if (deliveryMarker) {
+      getOrderID()
+    .then(orderId => {
+        const numericOrderId = parseInt(orderId, 10);
+        console.log('ID numérico de la orden:', numericOrderId);
+    })
+    .catch(error => console.error('Error:', error));    
+    if (deliveryMarker) {
     deliveryMarker.setMap(null);
     deliveryMarker = null;
   }
@@ -130,7 +138,7 @@
   $("#repartidor-info").html('');
 
   $.ajax({
-    url: `http://localhost:3001/v1/api/orders/${orderId}`,
+    url: `http://localhost:3001/v1/api/orders/${numericOrderId}`,
     type: 'PUT',
     headers: {
       "Content-Type": "application/json",
@@ -147,7 +155,12 @@
 }
 
 function confirmarCompra() {
-  const orderId = 1; // Reemplaza con el ID de la orden real
+  getOrderID()
+    .then(orderId => {
+        const numericOrderId = parseInt(orderId, 10);
+        console.log('ID numérico de la orden:', numericOrderId);
+    })
+    .catch(error => console.error('Error:', error));   
   if (deliveryMarker) {
     deliveryMarker.setMap(null);
     deliveryMarker = null;
@@ -165,7 +178,7 @@ function confirmarCompra() {
   $("#repartidor-info").html('');
 
   $.ajax({
-    url: `http://localhost:3001/v1/api/orders/${orderId}`,
+    url: `http://localhost:3001/v1/api/orders/${numericOrderId}`,
     type: 'PUT',
     headers: {
       "Content-Type": "application/json",
@@ -198,10 +211,40 @@ function confirmarCompra() {
       });
     }
 
+    function getOrderID() {
+    const userID = localStorage.getItem('user_id');
+
+    return new Promise((resolve, reject) => {
+        $.ajax({
+            url: `http://localhost:3001/v1/api/orders/${userID}`, // Pasar userId en la URL
+            method: 'GET',
+            dataType: 'json',
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            success: function(response) {
+                resolve(response.id); // Resolver la promesa con el ID de la orden
+            },
+            error: function(xhr, status, error) {
+                console.log('Error al cargar la información del repartidor:', xhr.responseText || error);
+                reject('Error al cargar la información del repartidor: ' + (xhr.responseText || error));
+            }
+        });
+    });
+}
+
+
     function consultarEstado() {
-      const orderId = 1; // Reemplaza con el ID de la orden real
-      $.ajax({
-        url: `http://localhost:3001/v1/api/status/${orderId}`,
+      getOrderID()
+    .then(orderId => {
+        const numericOrderId = parseInt(orderId, 10);
+        console.log('ID numérico de la orden:', numericOrderId);
+    })
+    .catch(error => console.error('Error:', error));
+      console.log(numericOrderId);    
+        $.ajax({
+        url: `http://localhost:3001/v1/api/status/${numericOrderId}`,
         method: 'GET',
         dataType: 'json',
         headers: {

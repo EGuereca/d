@@ -14,18 +14,31 @@ export default class OrdersController {
             res.status(500).json({ message: 'Error al obtener órdenes.' });
         }
     }
-
     static async getOrder(req: Request, res: Response) {
         try {
-            const {userId} = req.params;
-            const orders = await Order.findAll({where: {cliente_id: Number(userId)}});
-            res.status(200).json(orders);
+            const { id } = req.params;
+            const numericUserId = parseInt(id, 10);
+    
+            if (isNaN(numericUserId)) {
+                return res.status(400).json({ message: 'Invalid user ID' });
+            }
+    
+            const order = await Order.findOne({
+                where: { repartidor_id: numericUserId },
+                order: [['createdAt', 'DESC']]
+            });
+    
+            if (order) {
+                res.status(200).json(order);
+            } else {
+                res.status(404).json({ message: 'No se encontró ninguna orden.' });
+            }
         } catch (error) {
-            console.error('Error al obtener órdenes:', error);
-            res.status(500).json({ message: 'Error al obtener órdenes.' });
+            console.error('Error al obtener la última orden:', error);
+            res.status(500).json({ message: 'Error al obtener la última orden.' });
         }
     }
-
+    
     static async createOrder(req: Request, res: Response) {
         try {
             const { cliente_id } = req.body;
